@@ -1,0 +1,28 @@
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8000
+      client:
+        registration:
+          cognito:
+            client-id: 1h2dcs34d8ucv154k44joac1bc
+            client-secret: f49b7tho9hm75gnvv51pd70f998tks9bihvpa5nt9i6761sabfb
+            scope:
+              - phone
+              - openid
+              - email
+            redirect-uri: http://localhost:8080/login/oauth2/code/cognito
+        provider:
+          cognito:
+            issuerUri: https://cognito-idp.us-east-1.amazonaws.com/us-east-1_SNnleUPIH
+            user-name-attribute: username
+library:
+  cognito:
+    domain: https://us-east-1snnleupih.auth.us-east-1.amazoncognito.com
+    logout-redirect: http://localhost:8080/
+security:
+  jwt:
+    algorithm: HmacSHA256
+    secret: super-secret
