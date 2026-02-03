@@ -1,0 +1,104 @@
+<!-- src/main/resources/templates/my-account.html -->
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <title>Mi área - Biblioteca</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<header th:replace="~{fragments/layout :: topbar(${userName}, ${role})}"></header>
+
+<main class="container">
+    <section class="card pad">
+        <div class="row spread">
+            <div>
+                <h1 class="h1">Mis préstamos y reservas</h1>
+                <p class="p">Gestiona tu actividad</p>
+            </div>
+            <a class="btn" th:href="@{/menu}">← Volver</a>
+        </div>
+
+        <div class="divider"></div>
+
+        <h2 class="h2">PRÉSTAMOS ACTIVOS</h2>
+        <div class="list">
+            <article class="item" th:each="loan : ${myAccount.loans}">
+                <div class="thumb" aria-hidden="true"></div>
+                <div class="meta">
+                    <p class="title" th:text="${loan.title}">Título: X</p>
+                    <p class="sub" th:text="'Ejemplar: ' + ${loan.copyId} + ' · Dev. prevista: ' + ${loan.dueDate}">
+                        Ejemplar: 12345 · Dev. prevista: 20/03/2025
+                    </p>
+                    <p class="sub" th:if="${loan.isReference}">(Ejemplar referencia → NO renovable)</p>
+                </div>
+                <div class="right">
+                    <button class="btn primary"
+                            type="button"
+                            th:attr="data-renew-loan=${loan.id}"
+                            th:disabled="${loan.isReference}">
+                        Renovar
+                    </button>
+                </div>
+            </article>
+            <div class="card pad" th:if="${#lists.isEmpty(myAccount.loans)}">
+                <p class="p">No tienes préstamos activos.</p>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <h2 class="h2">RESERVAS ACTIVAS</h2>
+        <div class="list">
+            <article class="item" th:each="res : ${myAccount.reservations}">
+                <div class="thumb" aria-hidden="true"></div>
+                <div class="meta">
+                    <p class="title" th:text="${res.title}">Título: Z</p>
+                    <p class="sub" th:text="'Estado: ' + ${res.status} + ' · Fecha límite: ' + ${res.deadline}">
+                        Estado: Disponible para recoger · Fecha límite: 12/03/2025
+                    </p>
+                </div>
+                <div class="right">
+                    <form th:action="@{/reservations/{id}(id=${res.id})}" method="post" style="margin:0;">
+
+                        <!-- CSRF -->
+                        <input type="hidden"  th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+                        <!-- Override del método -->
+                        <input type="hidden" name="_method" value="delete"/>
+
+                        <button class="btn danger" type="submit" onclick="return confirm('¿Cancelar esta reserva?');">
+                            Cancelar reserva
+                        </button>
+                    </form>
+                </div>
+            </article>
+            <div class="card pad" th:if="${#lists.isEmpty(myAccount.reservations)}">
+                <p class="p">No tienes reservas activas.</p>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <h2 class="h2">SANCIONES</h2>
+        <div class="list">
+            <article class="card pad" th:each="sanc : ${myAccount.penalties}">
+                <div class="meta">
+                    <p class="title" th:text="'Sancion desde: ' + ${sanc.endDate} + ' · Hasta: ' + ${sanc.endDate}">
+                        Sanción desde: 1990/01/31 · Hasta: 2300/01/31</p>
+                    <p class="sub" th:text="'Motivo de Sanción: ' + ${sanc.reason}">
+                        Motivo de Sanción: Libro devuelto fuera de plazo.
+                    </p>
+                </div>
+            </article>
+            <div class="card pad" th:if="${#lists.isEmpty(myAccount.penalties)}">
+                <p class="p">No tienes sanciones activas.</p>
+            </div>
+        </div>
+    </section>
+
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+</main>
+</body>
+</html>

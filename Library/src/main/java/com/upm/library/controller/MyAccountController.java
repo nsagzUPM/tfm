@@ -4,10 +4,14 @@ import com.upm.library.dto.account.MyAccountDto;
 import com.upm.library.service.LoanService;
 import com.upm.library.service.MyAccountService;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-@RestController
+@Controller
 @RequestMapping("/my-account")
 public class MyAccountController {
 
@@ -20,9 +24,9 @@ public class MyAccountController {
     }
 
     @GetMapping
-    public MyAccountDto get(Authentication auth) {
-        String subject = ((Jwt) auth.getPrincipal()).getSubject();
-        return MyAccountDto.from(myAccountService.getAccountData(subject));
+    public String get(@AuthenticationPrincipal OidcUser user, Model model) {
+        model.addAttribute("myAccount", MyAccountDto.from(myAccountService.getActiveAccountData(user.getEmail())));
+        return "my-account";
     }
 
     @PostMapping("/loans/{loanId}/renew")

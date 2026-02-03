@@ -5,6 +5,9 @@ import com.upm.library.exception.BusinessRuleException;
 import com.upm.library.exception.NotFoundException;
 import com.upm.library.repository.*;
 import java.time.LocalDate;
+import java.util.List;
+
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -115,5 +118,22 @@ public class LoanService {
 
         loan.renew(loan.getDueDate().plusDays(LOAN_DAYS));
         return loanRepository.save(loan);
+    }
+
+    public List<User> searchUsers(String query) {
+        if (query == null || query.isBlank()) {
+            return userRepository.findAll();
+        }
+
+        String q = "%" + query.trim().toLowerCase() + "%";
+
+        Specification<User> spec = (root, cq, cb) ->
+                cb.or(
+                        //cb.like(cb.lower(root.get("id")), q),
+                        cb.like(cb.lower(root.get("externalId")), q),
+                        cb.like(cb.lower(root.get("name")), q)
+                );
+
+        return userRepository.findAll(spec);
     }
 }

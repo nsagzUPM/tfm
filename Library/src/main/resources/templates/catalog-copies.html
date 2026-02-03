@@ -1,0 +1,66 @@
+<!-- src/main/resources/templates/catalog-copies.html -->
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <title>Detalle - Biblioteca</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<header th:replace="~{fragments/layout :: topbar(${userName}, ${role})}"></header>
+
+<main class="container">
+    <section class="card pad">
+        <div class="row spread">
+            <div>
+                <h1 class="h1" th:text="${book.title}">Título del libro</h1>
+                <p class="p">
+                    <span th:text="'Autor: ' + ${book.author}">Autor: X</span>
+                    ·
+                    <span th:text="'Materia: ' + ${book.subject}">Materia: Y</span>
+                </p>
+            </div>
+            <a class="btn" th:href="@{/catalog}">← Volver</a>
+        </div>
+
+        <div class="divider"></div>
+
+        <h2 class="h2">Ejemplares</h2>
+
+        <div class="list">
+            <article class="card pad" th:each="copy : ${copies}">
+                <div class="row spread">
+                    <div>
+                        <div class="row" style="gap:8px;">
+                            <strong th:text="'Ejemplar ID: ' + ${copy.id}">Ejemplar ID: 12345</strong>
+                            <span class="chip" th:text="${copy.location}">Estante A3</span>
+                        </div>
+                        <p class="p" th:text="'Es una copia de referencia: ' + (${copy.referenceOnly} ? 'Sí' : 'No')">¿Referencia?: No</p>
+
+                        <p class="p" th:if="${copy.status == 'PRESTADO'}"
+                           th:text="'Dev. prevista: ' + ${copy.dueDate} + ' · Cola de reservas: ' + ${copy.queue}">
+                            Dev. prevista: 15/03/2025 · Cola de reservas: 2
+                        </p>
+                    </div>
+
+                    <div class="row">
+                        <span class="chip ok" th:if="${copy.status == 'AVAILABLE'}">Disponible</span>
+                        <span class="chip warn" th:if="${copy.status == 'RESERVED'}">Reservado</span>
+                        <span class="chip warn" th:if="${copy.status == 'LOANED'}">Prestado</span>
+                        <span class="chip warn" th:if="${copy.status == 'UNAVAILABLE'}">No disponible</span>
+
+                        <a class="btn primary" th:if="${copy.status != 'UNAVAILABLE'}"
+                           th:href="@{|/reservations/${copy.id}|}">
+                            Reservar ejemplar
+                        </a>
+                    </div>
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+</main>
+</body>
+</html>
