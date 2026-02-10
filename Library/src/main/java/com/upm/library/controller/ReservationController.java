@@ -1,8 +1,6 @@
 package com.upm.library.controller;
 
-import com.upm.library.domain.Book;
-import com.upm.library.domain.Copy;
-import com.upm.library.domain.User;
+import com.upm.library.domain.*;
 import com.upm.library.dto.reservations.CreateReservationRequest;
 import com.upm.library.dto.reservations.ReservationDto;
 import com.upm.library.exception.BusinessRuleException;
@@ -48,8 +46,18 @@ public class ReservationController {
     @PostMapping("/confirm")
     public String create(@AuthenticationPrincipal OidcUser oidcUser, @RequestParam Long copyId, RedirectAttributes ra) {
         try {
-            reservationService.createReservation(oidcUser.getEmail(), copyId);
-            ra.addFlashAttribute("reserveOk", "Reserva creada ✅");
+            Reservation res = reservationService.createReservation(oidcUser.getEmail(), copyId);
+            if (res.getStatus() == ReservationStatus.QUEUED) {
+                ra.addFlashAttribute(
+                        "success",
+                        "Ejemplar reservado. Has sido añadido a la cola ⏳"
+                );
+            } else {
+                ra.addFlashAttribute(
+                        "success",
+                        "Reserva creada con éxito ✅"
+                );
+            }
             return "redirect:/my-account";
         } catch (BusinessRuleException ex) {
             ra.addFlashAttribute("reserveErr", ex.getMessage());

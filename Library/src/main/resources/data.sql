@@ -36,8 +36,8 @@ VALUES (1, 1, 'AVAILABLE', FALSE, 'A1-01'),
 -- (Copy 2 and Copy 7 are LOANED)
 -- =========================
 INSERT INTO loans (user_id, copy_id, start_date, due_date, renewals, closed)
-VALUES (1, 2, DATE '2026-01-10', DATE '2026-01-24', 0, FALSE),
-       (1, 7, DATE '2026-01-01', DATE '2026-02-15', 1, FALSE),
+VALUES (2, 2, DATE '2026-01-10', DATE '2026-01-24', 0, FALSE),
+       (1, 7, DATE '2026-01-01', DATE '2026-02-15', 1, TRUE),
        (2, 7, DATE '2026-01-01', DATE '2026-02-15', 1, FALSE);
 
 -- =========================
@@ -55,6 +55,6 @@ VALUES (1, 4, 'ACTIVE', TIMESTAMP '2026-01-20 10:00:00', DATE '2026-01-14'),
 -- active: true/false
 -- =========================
 INSERT INTO penalties (user_id, start_date, end_date, active, reason)
-VALUES (1, DATE '2026-01-05', DATE '2026-01-12', FALSE, 'Old penalty (expired)'),
-       (1, DATE '2026-01-16', DATE '2026-01-23', TRUE, 'Late return'),
-       (2, DATE '2026-01-16', DATE '2026-01-23', TRUE, 'Late return');
+VALUES (1, DATE '2026-01-05', DATE '2026-02-09', TRUE, 'Old penalty (expired)'),
+       (1, DATE '2026-01-16', DATE '2026-01-23', FALSE, 'Late return'),
+       (2, DATE '2026-01-16', DATE '2026-02-09', TRUE, 'Late return');

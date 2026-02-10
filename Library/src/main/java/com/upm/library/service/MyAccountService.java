@@ -6,6 +6,8 @@ import com.upm.library.exception.NotFoundException;
 import com.upm.library.repository.*;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class MyAccountService {
 
@@ -32,19 +34,12 @@ public class MyAccountService {
 
         return new Object[] {
                 loanRepository.findByUserIdAndClosed(user.getId(), false),
-                reservationRepository.findByUserIdAndStatus(user.getId(), ReservationStatus.ACTIVE),
-                penaltyRepository.findByUserId(user.getId())
+                reservationRepository.findByUserIdAndStatusInOrderByCreatedAtAsc(user.getId(), List.of(
+                        ReservationStatus.ACTIVE,
+                        ReservationStatus.QUEUED
+                )),
+                penaltyRepository.findByUserIdAndActiveIsTrue(user.getId())
         };
     }
 
-    public Object[] getAccountData(String externalUserId) {
-        User user = userRepository.findByExternalId(externalUserId)
-                .orElseThrow(() -> new NotFoundException("User not found."));
-
-        return new Object[] {
-                loanRepository.findByUserId(user.getId()),
-                reservationRepository.findByUserId(user.getId()),
-                penaltyRepository.findByUserId(user.getId())
-        };
-    }
 }

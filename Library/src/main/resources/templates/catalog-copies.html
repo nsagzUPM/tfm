@@ -50,10 +50,14 @@
                         <span class="chip warn" th:if="${copy.status == 'LOANED'}">Prestado</span>
                         <span class="chip warn" th:if="${copy.status == 'UNAVAILABLE'}">No disponible</span>
 
-                        <a class="btn primary" th:if="${copy.status != 'UNAVAILABLE'}"
+                        <a class="btn primary" th:if="${copy.status != 'UNAVAILABLE' and !blockedCopyIds.contains(copy.id)}"
                            th:href="@{|/reservations/${copy.id}|}">
                             Reservar ejemplar
                         </a>
+                        <span class="chip warn"
+                              th:if="${copy.status != 'UNAVAILABLE' and blockedCopyIds.contains(copy.id)}">
+                            Ya lo tienes reservado o prestado
+                        </span>
                     </div>
                 </div>
             </article>

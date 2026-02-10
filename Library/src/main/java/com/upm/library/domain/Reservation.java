@@ -68,4 +68,8 @@ public class Reservation {
     public void fulfill() {
         this.status = ReservationStatus.FULFILLED;
     }
+
+    public void setStatus(ReservationStatus status) {
+        this.status = status;
+    }
 }

@@ -39,6 +39,7 @@ public class AwsSecurityConfig {
         http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/", "/login", "/error").permitAll()
+                        .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/menu", "/catalog/**", "/my-account/**").authenticated()
                         .requestMatchers("/admin/**").hasRole("LIBRARIAN")
                         .anyRequest().authenticated()

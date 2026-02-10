@@ -49,7 +49,7 @@
 
         <div class="divider"></div>
 
-        <h2 class="h2">RESERVAS ACTIVAS</h2>
+        <h2 class="h2">RESERVAS ACTIVAS Y EN COLA</h2>
         <div class="list">
             <article class="item" th:each="res : ${myAccount.reservations}">
                 <div class="thumb" aria-hidden="true"></div>
@@ -85,7 +85,7 @@
         <div class="list">
             <article class="card pad" th:each="sanc : ${myAccount.penalties}">
                 <div class="meta">
-                    <p class="title" th:text="'Sancion desde: ' + ${sanc.endDate} + ' · Hasta: ' + ${sanc.endDate}">
+                    <p class="title" th:text="'Sancion desde: ' + ${sanc.startDate} + ' · Hasta: ' + ${sanc.endDate}">
                         Sanción desde: 1990/01/31 · Hasta: 2300/01/31</p>
                     <p class="sub" th:text="'Motivo de Sanción: ' + ${sanc.reason}">
                         Motivo de Sanción: Libro devuelto fuera de plazo.
