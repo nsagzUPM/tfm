@@ -34,12 +34,7 @@
                     <p class="sub" th:if="${loan.isReference}">(Ejemplar referencia → NO renovable)</p>
                 </div>
                 <div class="right">
-                    <button class="btn primary"
-                            type="button"
-                            th:attr="data-renew-loan=${loan.id}"
-                            th:disabled="${loan.isReference}">
-                        Renovar
-                    </button>
+
                 </div>
             </article>
             <div class="card pad" th:if="${#lists.isEmpty(myAccount.loans)}">

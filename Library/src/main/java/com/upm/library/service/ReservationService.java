@@ -4,9 +4,11 @@ import com.upm.library.domain.*;
 import com.upm.library.exception.BusinessRuleException;
 import com.upm.library.exception.NotFoundException;
 import com.upm.library.repository.*;
+
 import java.time.LocalDate;
 import java.util.List;
 
+import lombok.val;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,17 +19,19 @@ public class ReservationService {
     private final CopyRepository copyRepository;
     private final ReservationRepository reservationRepository;
     private final PenaltyRepository penaltyRepository;
+    private final SystemConfigService systemConfigService;
 
     public ReservationService(
             UserRepository userRepository,
             CopyRepository copyRepository,
             ReservationRepository reservationRepository,
-            PenaltyRepository penaltyRepository
+            PenaltyRepository penaltyRepository, SystemConfigService systemConfigService
     ) {
         this.userRepository = userRepository;
         this.copyRepository = copyRepository;
         this.reservationRepository = reservationRepository;
         this.penaltyRepository = penaltyRepository;
+        this.systemConfigService = systemConfigService;
     }
 
     @Transactional
@@ -57,7 +61,7 @@ public class ReservationService {
                         List.of(ReservationStatus.ACTIVE, ReservationStatus.QUEUED)
                 );
         Reservation reservation = new Reservation(user, copy);
-
+        reservation.setDeadline(LocalDate.now().plusDays(systemConfigService.getReservationDays()));
         if (copyAvailable && !hasActiveOrQueued) {
             reservation.setStatus(ReservationStatus.ACTIVE);
             copy.markAsReserved();
@@ -78,12 +82,14 @@ public class ReservationService {
                 )
                 .ifPresent(reservation -> {
                     reservation.setStatus(ReservationStatus.ACTIVE);
+                    reservation.setDeadline(LocalDate.now().plusDays(systemConfigService.getReservationDays()));
                     copy.markAsReserved();
 
                     reservationRepository.save(reservation);
                     copyRepository.save(copy);
                 });
     }
+
     public boolean hasQueuedReservations(Copy copy) {
         return reservationRepository.existsByCopyAndStatus(
                 copy,

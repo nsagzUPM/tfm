@@ -9,6 +9,7 @@ import com.upm.library.exception.NotFoundException;
 import com.upm.library.repository.*;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import org.apache.coyote.BadRequestException;
@@ -25,11 +26,10 @@ public class LoanService {
     private final PenaltyRepository penaltyRepository;
     private final ReservationRepository reservationRepository;
     private final ReservationService reservationService;
+    private final SystemConfigService systemConfigService;
 
 
     // MVP constants (later move to DB config)
-    private static final int LOAN_DAYS = 14;
-    private static final int LATE_RETURN_PENALTY_DAYS = 7;
     private static final int MAX_RENEWALS = 1;
 
     public LoanService(
@@ -38,7 +38,7 @@ public class LoanService {
             LoanRepository loanRepository,
             PenaltyRepository penaltyRepository,
             ReservationRepository reservationRepository,
-            ReservationService reservationService
+            ReservationService reservationService, SystemConfigService systemConfigService
     ) {
         this.userRepository = userRepository;
         this.copyRepository = copyRepository;
@@ -46,6 +46,7 @@ public class LoanService {
         this.penaltyRepository = penaltyRepository;
         this.reservationRepository = reservationRepository;
         this.reservationService = reservationService;
+        this.systemConfigService = systemConfigService;
     }
 
     public AdminLoanView buildAdminLoanView(String userQ, Long userId, String copyCode) throws BadRequestException {
@@ -142,7 +143,7 @@ public class LoanService {
         }
 
         LocalDate today = LocalDate.now();
-        Loan loan = new Loan(user, copy, today, today.plusDays(LOAN_DAYS));
+        Loan loan = new Loan(user, copy, today, today.plusDays(systemConfigService.getLoanDays(user.getRol())));
         copy.markAsLoaned();
 
         copyRepository.save(copy);
@@ -164,10 +165,11 @@ public class LoanService {
 
         LocalDate today = LocalDate.now();
         if (today.isAfter(openLoan.getDueDate())) {
+            long lateDays = ChronoUnit.DAYS.between(openLoan.getDueDate(), LocalDate.now());
             Penalty penalty = new Penalty(
                     openLoan.getUser(),
                     today,
-                    today.plusDays(LATE_RETURN_PENALTY_DAYS),
+                    today.plusDays(lateDays * systemConfigService.getPenaltyDays()),
                     "Late return"
             );
             penaltyRepository.save(penalty);
@@ -195,7 +197,7 @@ public class LoanService {
             throw new BusinessRuleException("Maximum renewals reached.");
         }
 
-        loan.renew(loan.getDueDate().plusDays(LOAN_DAYS));
+        loan.renew(loan.getDueDate().plusDays(systemConfigService.getLoanDays(user.getRol())));
         return loanRepository.save(loan);
     }
 

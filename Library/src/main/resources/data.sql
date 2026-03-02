@@ -58,3 +58,6 @@ INSERT INTO penalties (user_id, start_date, end_date, active, reason)
 VALUES (1, DATE '2026-01-05', DATE '2026-02-09', TRUE, 'Old penalty (expired)'),
        (1, DATE '2026-01-16', DATE '2026-01-23', FALSE, 'Late return'),
        (2, DATE '2026-01-16', DATE '2026-02-09', TRUE, 'Late return');
+
+INSERT INTO system_config (id, student_loan_days, professor_loan_days, penalty_days_per_late_day, reservation_days, version)
+VALUES (1, 15, 30, 2, 3, 0);
