@@ -1,108 +1,163 @@
 package com.upm.library;
 
-import java.time.Duration;
-
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import com.upm.library.domain.Penalty;
+import com.upm.library.domain.Reservation;
+import com.upm.library.domain.ReservationStatus;
 import org.junit.jupiter.api.Test;
-
-import org.openqa.selenium.*;
-import org.openqa.selenium.firefox.FirefoxDriver;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
-
+import org.openqa.selenium.By;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.time.LocalDate;
+import java.util.Collections;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+
 @ActiveProfiles("aws")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
-public class LoanTest {
+public class LoanTest extends BaseE2ETest {
 
-  private WebDriver driver;
-  private WebDriverWait wait;
 
-  @BeforeEach
-  void setUp() {
-    driver = new FirefoxDriver();
-    driver.manage().window().setSize(new Dimension(1936, 1056));
-    wait = new WebDriverWait(driver, Duration.ofSeconds(30));
-  }
+    @Test
+    void prestamoSinSanciónConReserva() {
+        openHome();
+        loginCognito();
+        reservationService.createReservation(USER, 8L);
+        assertThat(
+                penaltyRepository.findByUserIdAndActiveIsTrue(2L),
+                is(Collections.emptyList())
+        );
+        assertThat(
+                reservationRepository.findByUserIdAndCopyIdAndStatus(2L, 8L, ReservationStatus.ACTIVE).isEmpty(),
+                is(false)
+        );
+        assertThat(
+                loanRepository.findByUserIdAndCopyIdAndClosed(2L, 8L, false).isEmpty(),
+                is(true)
+        );
+        click(By.cssSelector(".three > .card:nth-child(1) > .p"));
+        type(By.name("userQ"), "a");
+        click(By.cssSelector(".primary"));
 
-  @AfterEach
-  void tearDown() {
-    if (driver != null) driver.quit();
-  }
+        click(By.cssSelector(".item:nth-child(2) > .right span"));
 
-  @Test
-  void loanTest() {
-    driver.get("http://localhost:8080");
+        type(By.name("copyCode"), "8");
+        click(By.cssSelector(".btn:nth-child(5)"));
+        click(By.cssSelector(".btn:nth-child(6)"));
 
-    // 1) Login Cognito (igual que tu test que funciona)
-    loginCognito("prueba@prueba.com", "1234567aA!");
+        var loan = loanRepository.findByUserIdAndCopyIdAndClosed(2L, 8L, false);
+        assertThat(
+                loan.isPresent(),
+                is(true)
+        );
+        var l = loan.get();
+        l.close();
+        loanRepository.save(l);
+    }
+    @Test
+    void prestamoSinSanciónSinReserva() {
+        openHome();
+        loginCognito();
+        assertThat(
+                penaltyRepository.findByUserIdAndActiveIsTrue(2L),
+                is(Collections.emptyList())
+        );
+        assertThat(
+                reservationRepository.findByUserIdAndCopyIdAndStatus(2L, 8L, ReservationStatus.ACTIVE).isEmpty(),
+                is(true)
+        );
+        assertThat(
+                loanRepository.findByUserIdAndCopyIdAndClosed(2L, 8L, false).isEmpty(),
+                is(true)
+        );
+        click(By.cssSelector(".three > .card:nth-child(1) > .p"));
+        type(By.name("userQ"), "a");
+        click(By.cssSelector(".primary"));
 
-    // 2) Espera a estar ya en tu app (mejor ancla: algo que exista sí o sí)
-    // Si en esta pantalla existe userQ, perfecto:
-    wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("body")));
+        click(By.cssSelector(".item:nth-child(2) > .right span"));
 
-    // Si este click es necesario en tu flujo, mantenlo.
-    // (Es frágil, pero lo dejamos de momento porque es lo que grabaste)
-    click(By.cssSelector(".three > .card:nth-child(1) > .p"));
+        type(By.name("copyCode"), "8");
+        click(By.cssSelector(".btn:nth-child(5)"));
+        click(By.cssSelector(".btn:nth-child(6)"));
 
-    // 3) Buscar usuario / item (según lo grabado)
-    type(By.name("userQ"), "a");
-    click(By.cssSelector(".primary"));
+        var loan = loanRepository.findByUserIdAndCopyIdAndClosed(2L, 8L, false);
+        assertThat(
+                loan.isPresent(),
+                is(true)
+        );
+        var l = loan.get();
+        loanService.registerReturn(l.getId());
+    }
 
-    // 4) Seleccionar item (esto es frágil: nth-child)
-    // Ideal: cambiar por data-testid o link/texto estable
-    click(By.cssSelector(".item:nth-child(2) > .right span"));
+    @Test
+    void prestamoSinSanciónConReservaOtraPersona() {
+        openHome();
+        loginCognito();
+        reservationService.createReservation(OTHER_USER, 1L);
+        assertThat(
+                penaltyRepository.findByUserIdAndActiveIsTrue(2L),
+                is(Collections.emptyList())
+        );
+        assertThat(
+                reservationRepository.findByUserIdAndCopyIdAndStatus(2L, 1L, ReservationStatus.ACTIVE).isEmpty(),
+                is(true)
+        );
+        assertThat(
+                loanRepository.findByUserIdAndCopyIdAndClosed(2L, 1L, false).isEmpty(),
+                is(true)
+        );
+        click(By.cssSelector(".three > .card:nth-child(1) > .p"));
+        type(By.name("userQ"), "a");
+        click(By.cssSelector(".primary"));
 
-    // 5) Introducir código de ejemplar y prestar
-    type(By.name("copyCode"), "3");
-    click(By.cssSelector(".btn:nth-child(5)"));
-    click(By.cssSelector(".btn:nth-child(6)"));
+        click(By.cssSelector(".item:nth-child(2) > .right span"));
 
-    // 6) Volver a home y salir/volver (según grabación)
-    click(By.linkText("BIBLIOTECA UNIVERSIDAD POLITÉCNICA DE MADRID"));
-    click(By.cssSelector(".two > .card:nth-child(2) > .p"));
-    click(By.cssSelector(".ghost"));
-  }
+        type(By.name("copyCode"), "1");
+        click(By.cssSelector(".btn:nth-child(5)"));
+        click(By.cssSelector(".btn:nth-child(6)"));
 
-  private void loginCognito(String username, String password) {
-    WebElement email = wait.until(ExpectedConditions.elementToBeClickable(
-            By.cssSelector("input[name='username'], input[type='email']")
-    ));
-    email.clear();
-    email.sendKeys(username);
+        assertThat(
+                loanRepository.findByUserIdAndCopyIdAndClosed(2L, 1L, false).isEmpty(),
+                is(true)
+        );
+        var reservation = reservationRepository.findByUserIdAndCopyIdAndStatus(1L, 1L, ReservationStatus.ACTIVE).get();
+        reservation.cancel();
+        reservationRepository.saveAndFlush(reservation);
+    }
 
-    WebElement submitEmail = wait.until(ExpectedConditions.elementToBeClickable(
-            By.cssSelector("button[type='submit'], input[type='submit']")
-    ));
-    submitEmail.click();
+    @Test
+    void prestamoConSanciónSinReserva() {
+        openHome();
+        loginCognito();
+        var user = userRepository.findByExternalId(USER).get();
+        Penalty penalty = new Penalty(user, LocalDate.now(), LocalDate.now(), "prueba con sanción");
+        penaltyRepository.save(penalty);
+        assertThat(
+                penaltyRepository.findByUserIdAndActiveIsTrue(2L).isEmpty(),
+                is(false)
+        );
+        assertThat(
+                loanRepository.findByUserIdAndCopyIdAndClosed(2L, 5L, false).isEmpty(),
+                is(true)
+        );
+        click(By.cssSelector(".three > .card:nth-child(1) > .p"));
+        type(By.name("userQ"), "a");
+        click(By.cssSelector(".primary"));
 
-    WebElement pwd = wait.until(ExpectedConditions.visibilityOfElementLocated(
-            By.cssSelector("input[name='password'], input[type='password']")
-    ));
-    pwd.clear();
-    pwd.sendKeys(password);
+        click(By.cssSelector(".item:nth-child(2) > .right span"));
 
-    // submit “real”
-    pwd.submit();
+        type(By.name("copyCode"), "5");
+        click(By.cssSelector(".btn:nth-child(5)"));
+        click(By.cssSelector(".btn:nth-child(6)"));
 
-    // espera redirect fuera de Cognito y dentro de localhost
-    wait.until(ExpectedConditions.not(ExpectedConditions.urlContains("amazoncognito.com")));
-    wait.until(ExpectedConditions.urlContains("localhost:8080"));
-
-    // opcional: espera a salir del callback
-    wait.until(ExpectedConditions.not(ExpectedConditions.urlContains("/login/oauth2/code/")));
-  }
-
-  private void click(By locator) {
-    wait.until(ExpectedConditions.elementToBeClickable(locator)).click();
-  }
-
-  private void type(By locator, String text) {
-    WebElement el = wait.until(ExpectedConditions.visibilityOfElementLocated(locator));
-    el.clear();
-    el.sendKeys(text);
-  }
+        var loan = loanRepository.findByUserIdAndCopyIdAndClosed(2L, 5L, false);
+        assertThat(
+                loan.isPresent(),
+                is(false)
+        );
+        var penalties = penaltyRepository.findByUserIdAndActiveIsTrue(2L);
+        penalties.forEach(Penalty::deactivate);
+        penaltyRepository.saveAllAndFlush(penalties);
+    }
 }

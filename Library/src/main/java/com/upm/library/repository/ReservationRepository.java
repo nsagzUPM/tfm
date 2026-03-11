@@ -11,8 +11,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
-    List<Reservation> findByUserId(Long userId);
-    List<Reservation> findByUserIdAndCopyIdAndStatus(Long userId, Long copyId, ReservationStatus status);
+    Optional<Reservation> findByUserIdAndCopyIdAndStatus(Long userId, Long copyId, ReservationStatus status);
     boolean existsByUserIdAndCopyIdAndStatus(Long userId, Long copyId, ReservationStatus status);
     boolean existsByCopyAndStatusIn(Copy copy,List<ReservationStatus> statuses);
     Optional<Reservation> findFirstByCopyAndStatusOrderByCreatedAtAsc(Copy copy,ReservationStatus status);

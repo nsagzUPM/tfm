@@ -1,111 +1,103 @@
 package com.upm.library;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import com.upm.library.domain.Penalty;
+import com.upm.library.domain.ReservationStatus;
 import org.junit.jupiter.api.Test;
-
-import org.openqa.selenium.*;
-import org.openqa.selenium.firefox.FirefoxDriver;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
+import org.openqa.selenium.By;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.time.LocalDate;
+import java.util.Collections;
+import java.util.concurrent.TimeUnit;
+
 @ActiveProfiles("aws")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
-public class ReservationTest {
-    private WebDriver driver;
-    private Map<String, Object> vars;
-    JavascriptExecutor js;
-
-    @BeforeEach
-    public void setUp() {
-        driver = new FirefoxDriver();
-        js = (JavascriptExecutor) driver;
-        vars = new HashMap<String, Object>();
-    }
+public class ReservationTest extends BaseE2ETest {
 
 
-    @AfterEach
-    public void tearDown() {
-        driver.quit();
+    @Test
+    void reservarSinSancion() {
+        openHome();
+        loginCognito();
+        assertThat(
+                penaltyRepository.findByUserIdAndActiveIsTrue(2L).isEmpty(),
+                is(true)
+        );
+        assertThat(
+                reservationRepository.findByUserIdAndCopyIdAndStatus(2L, 1L, ReservationStatus.ACTIVE).isEmpty(),
+                is(true)
+        );
+
+        click(By.cssSelector(".two > .card:nth-child(1) > .p"));
+        click(By.name("q"));
+        type(By.name("q"), "a");
+        click(By.cssSelector(".primary"));
+        click(By.linkText("Ver ejemplares →"));
+        click(By.linkText("Reservar ejemplar"));
+        click(By.cssSelector(".primary"));
+
+        await()
+                .atMost(10, TimeUnit.SECONDS)
+                .pollInterval(200, TimeUnit.MILLISECONDS)
+                .untilAsserted(() -> {
+                    var reservations = reservationRepository.findByUserIdAndCopyIdAndStatus(2L, 1L, ReservationStatus.ACTIVE);
+                    assertThat("Debe existir una reserva activa", reservations.isEmpty(), is(false));
+                    var reservation = reservations.get();
+
+                    var reservationDays = systemConfigService.getReservationDays();
+                    LocalDate expectedDeadLine = LocalDate.now().plusDays(reservationDays);
+                    assertThat(
+                            reservation.getDeadline(),
+                            is(expectedDeadLine)
+                    );
+                    reservationService.cancelReservation(USER, reservation.getId());
+                });
+
+        assertThat(
+                reservationRepository.findByUserIdAndCopyIdAndStatus(2L, 1L, ReservationStatus.ACTIVE).isEmpty(),
+                is(true)
+        );
     }
 
     @Test
-    public void test1() {
-        driver.get("http://localhost:8080");
-        driver.manage().window().setSize(new Dimension(1936, 1056));
-        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
+    void reservarConSancion() {
+        openHome();
+        loginCognito();
 
-        WebElement email = wait.until(ExpectedConditions.elementToBeClickable(By.cssSelector("input[name='username'], input[type='email']")));
-        email.clear();
-        email.sendKeys("prueba@prueba.com");
+        var user = userRepository.findByExternalId(USER).get();
+        Penalty  penalty = new Penalty(user, LocalDate.now(), LocalDate.now(), "prueba con sanción");
+        penaltyRepository.save(penalty);
+        assertThat(
+                penaltyRepository.findByUserIdAndActiveIsTrue(2L).isEmpty(),
+                is(false)
+        );
+        assertThat(
+                reservationRepository.findByUserIdAndCopyIdAndStatus(2L, 1L, ReservationStatus.ACTIVE).isEmpty(),
+                is(true)
+        );
 
-        // botón "next/sign in" (puede ser button o input)
-        WebElement submitEmail = wait.until(ExpectedConditions.presenceOfElementLocated(
-                By.cssSelector("button[type='submit'], input[type='submit']")
-        ));
-        wait.until(ExpectedConditions.elementToBeClickable(submitEmail)).click();
+        click(By.cssSelector(".two > .card:nth-child(1) > .p"));
+        click(By.name("q"));
+        type(By.name("q"), "a");
+        click(By.cssSelector(".primary"));
+        click(By.linkText("Ver ejemplares →"));
+        click(By.linkText("Reservar ejemplar"));
+        click(By.cssSelector(".primary"));
 
-        WebDriverWait wait2 = new WebDriverWait(driver, Duration.ofSeconds(30));
-
-        WebElement password = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                By.cssSelector("input[name='password'], input[type='password']")
-        ));
-        password.clear();
-        password.sendKeys("1234567aA!");
-
-        // Enviar el formulario "de verdad"
-        password.submit();
-        wait2.until(ExpectedConditions.not(ExpectedConditions.urlContains("amazoncognito.com")));
-        wait2.until(ExpectedConditions.urlContains("localhost:8080"));
-
-        // DEBUG
-        System.out.println("URL tras submit password: " + driver.getCurrentUrl());
-        System.out.println("TITLE tras submit password: " + driver.getTitle());
-        // Espera a que cambie a tu app
-        WebDriverWait wait1 = new WebDriverWait(driver, Duration.ofSeconds(30));
-        try {
-            wait1.until(ExpectedConditions.not(ExpectedConditions.urlContains("amazoncognito.com")));
-            wait1.until(ExpectedConditions.urlContains("localhost:8080"));
-        } catch (TimeoutException e) {
-            // Si no sales de Cognito, imprime info útil y falla el test aquí mismo
-            System.out.println("NO SALIÓ DE COGNITO. URL: " + driver.getCurrentUrl());
-            System.out.println("TITLE: " + driver.getTitle());
-
-            // Intenta sacar mensaje de error típico de Cognito
-            var alerts = driver.findElements(By.cssSelector("[role='alert'], .text-error, .error, .alert, .banner"));
-            for (var a : alerts) {
-                String t = a.getText().trim();
-                if (!t.isEmpty()) System.out.println("ALERT: " + t);
-            }
-
-            // Detecta MFA / código
-            boolean hayCode = !driver.findElements(By.cssSelector("input[autocomplete='one-time-code'], input[name*='code'], input[id*='code']")).isEmpty();
-            System.out.println("¿Pide código/MFA?: " + hayCode);
-
-            throw e;
-        }
-
-        // espera a que estés en tu app (URL localhost)
-        driver.findElement(By.cssSelector(".two > .card:nth-child(1) > .p")).click();
-        driver.findElement(By.name("q")).click();
-        driver.findElement(By.name("q")).sendKeys("a");
-        driver.findElement(By.cssSelector(".primary")).click();
-        driver.findElement(By.linkText("Ver ejemplares →")).click();
-        driver.findElement(By.linkText("Reservar ejemplar")).click();
-        driver.findElement(By.cssSelector(".primary")).click();
-        driver.findElement(By.cssSelector(".danger")).click();
-        assertThat(driver.switchTo().alert().getText(), is("¿Cancelar esta reserva?"));
-        driver.switchTo().alert().accept();
-        driver.findElement(By.cssSelector(".ghost")).click();
+        await()
+                .atMost(10, TimeUnit.SECONDS)
+                .pollInterval(200, TimeUnit.MILLISECONDS)
+                .untilAsserted(() -> {
+                    var reservations = reservationRepository.findByUserIdAndCopyIdAndStatus(2L, 1L, ReservationStatus.ACTIVE);
+                    assertThat("No debe existir una reserva activa", reservations.isEmpty(), is(true));
+                });
+        var penalties = penaltyRepository.findByUserIdAndActiveIsTrue(2L);
+        penalties.forEach(Penalty::deactivate);
+        penaltyRepository.saveAllAndFlush(penalties);
     }
 }
-

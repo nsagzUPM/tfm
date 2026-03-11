@@ -38,7 +38,7 @@ VALUES (1, 1, 'AVAILABLE', FALSE, 'A1-01'),
 INSERT INTO loans (user_id, copy_id, start_date, due_date, renewals, closed)
 VALUES (2, 2, DATE '2026-01-10', DATE '2026-01-24', 0, FALSE),
        (1, 7, DATE '2026-01-01', DATE '2026-02-15', 1, TRUE),
-       (2, 7, DATE '2026-01-01', DATE '2026-02-15', 1, FALSE);
+       (2, 7, DATE '2026-01-01', DATE '2026-02-15', 1, TRUE);
 
 -- =========================
 -- RESERVATIONS

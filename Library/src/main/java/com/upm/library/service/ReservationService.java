@@ -69,8 +69,8 @@ public class ReservationService {
             reservation.setStatus(ReservationStatus.QUEUED);
         }
 
-        copyRepository.save(copy);
-        return reservationRepository.save(reservation);
+        copyRepository.saveAndFlush(copy);
+        return reservationRepository.saveAndFlush(reservation);
     }
 
     @Transactional

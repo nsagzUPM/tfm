@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface LoanRepository extends JpaRepository<Loan, Long> {
-    List<Loan> findByUserId(Long userId);
+    Optional<Loan> findByUserIdAndCopyIdAndClosed(Long userId, Long copyId, boolean closed);
     List<Loan> findByUserIdAndClosed(Long userId, boolean closed);
     Optional<Loan> findByCopyIdAndClosed(Long copyId, boolean closed);
     @Query("""

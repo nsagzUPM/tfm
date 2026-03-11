@@ -1,140 +1,98 @@
 package com.upm.library;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.time.Duration;
-
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import com.upm.library.domain.Loan;
+import com.upm.library.domain.Penalty;
 import org.junit.jupiter.api.Test;
-
-import org.openqa.selenium.*;
-import org.openqa.selenium.firefox.FirefoxDriver;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
-
+import org.openqa.selenium.By;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.Collections;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+
 @ActiveProfiles("aws")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
-public class ReturnTest {
+public class ReturnTest extends BaseE2ETest {
 
-  private WebDriver driver;
-  private WebDriverWait wait;
+    @Test
+    void devolverConSancion() {
+        openHome();
+        loginCognito();
+        assertThat(
+                penaltyRepository.findByUserIdAndActiveIsTrue(2L),
+                is(Collections.emptyList())
+        );
+        // Devolver
+        click(By.cssSelector(".three > .card:nth-child(2)"));
+        type(By.name("copyId"), "2");
+        click(By.cssSelector(".primary"));
+        click(By.cssSelector(".btn:nth-child(5)"));
 
-  private static final String BASE_URL = "http://localhost:8080";
-  private static final String USER = "prueba@prueba.com";
-  private static final String PASS = "1234567aA!";
+        assertThat(waitAlert().getText(), is("¿Confirmar devolución del ejemplar?"));
+        waitAlert().accept();
+        await()
+                .atMost(10, TimeUnit.SECONDS)
+                .pollInterval(200, TimeUnit.MILLISECONDS)
+                .untilAsserted(() -> {
+                    var penalties = penaltyRepository.findByUserIdAndActiveIsTrue(2L);
+                    assertThat("Debe existir una sanción activa", penalties.isEmpty(), is(false));
+                    var penalty = penalties.getFirst();
+                    assertThat(
+                            penalty.getStartDate(),
+                            is(LocalDate.now())
+                    );
+                    long daysLate = ChronoUnit.DAYS.between(LocalDate.of(2026, 1, 24), LocalDate.now());
+                    LocalDate expectedEnd = LocalDate.now().plusDays(systemConfigService.getPenaltyDays() * daysLate);
+                    assertThat(penalty.getEndDate(), is(expectedEnd));
+                    penalties.forEach(Penalty::deactivate);
+                    penaltyRepository.saveAllAndFlush(penalties);
+                });
 
-  @BeforeEach
-  void setUp() {
-    driver = new FirefoxDriver();
-    driver.manage().window().setSize(new Dimension(1936, 1056));
-    wait = new WebDriverWait(driver, Duration.ofSeconds(30));
-  }
-
-  @AfterEach
-  void tearDown() {
-    if (driver != null) driver.quit();
-  }
-
-  @Test
-  void devolverYPrestar() {
-    // --- 1) Ir a la app + login (robusto como tu test anterior) ---
-    driver.get(BASE_URL);
-    loginCognito(USER, PASS);
-
-    // --- 2) DEVOLUCIÓN (según lo grabado) ---
-    // Card "devolución" (grabaste: .three > .card:nth-child(2))
-    click(By.cssSelector(".three > .card:nth-child(2)"));
-
-    type(By.name("copyId"), "2");
-    click(By.cssSelector(".primary"));
-
-    // botón acción (grabaste: .btn:nth-child(5))
-    click(By.cssSelector(".btn:nth-child(5)"));
-
-    Alert alert = wait.until(ExpectedConditions.alertIsPresent());
-    assertThat(alert.getText(), is("¿Confirmar devolución del ejemplar?"));
-    alert.accept();
-
-    click(By.linkText("← Volver"));
-
-    // Volver a home / perfil
-    click(By.cssSelector(".two > .card:nth-child(2) > .p"));
-    click(By.cssSelector(".ghost"));
-
-    // --- 3) PRÉSTAMO (lo que grabaste después) ---
-    // En tu grabación volviste a abrir / cerrar navegador. Aquí no hace falta:
-    // simplemente volvemos al home y seguimos.
-    driver.get(BASE_URL);
-    loginCognito(USER, PASS);
-
-    click(By.cssSelector(".three > .card:nth-child(1) > .p"));
-    type(By.name("userQ"), "a");
-    click(By.cssSelector(".primary"));
-
-    click(By.cssSelector(".item:nth-child(2) > .right span"));
-
-    type(By.name("copyCode"), "1");
-    click(By.cssSelector(".btn:nth-child(5)"));
-    click(By.cssSelector(".btn:nth-child(6)"));
-
-    click(By.linkText("BIBLIOTECA UNIVERSIDAD POLITÉCNICA DE MADRID"));
-    click(By.cssSelector(".two > .card:nth-child(2) > .p"));
-    click(By.cssSelector(".ghost"));
-  }
-
-  // ==== Login robusto (copiado del patrón que te funciona) ====
-  private void loginCognito(String username, String password) {
-    // Si ya estás logueado (sesión viva), puede que no aparezca Cognito.
-    // En ese caso, simplemente no hacemos nada.
-    if (driver.getCurrentUrl().contains("amazoncognito.com")) {
-      // estamos en Cognito, seguimos
-    } else {
-      // si el home ya cargó y no hay inputs de Cognito, salimos
-      if (driver.findElements(By.cssSelector("input[name='username'], input[type='email']")).isEmpty()
-              && driver.findElements(By.cssSelector("input[name='password'], input[type='password']")).isEmpty()) {
-        return;
-      }
     }
 
-    WebElement email = wait.until(ExpectedConditions.elementToBeClickable(
-            By.cssSelector("input[name='username'], input[type='email']")
-    ));
-    email.clear();
-    email.sendKeys(username);
+    @Test
+    void devolverSinSancion() {
+        loanService.createLoan(2L, 5L);
+        openHome();
+        loginCognito();
 
-    WebElement submitEmail = wait.until(ExpectedConditions.elementToBeClickable(
-            By.cssSelector("button[type='submit'], input[type='submit']")
-    ));
-    submitEmail.click();
+        assertThat(
+                penaltyRepository.findByUserIdAndActiveIsTrue(2L),
+                is(Collections.emptyList())
+        );
+        Optional<Loan> loan= loanRepository.findByCopyIdAndClosed(5L, false);
+        assertThat(loan.isEmpty(), is(false));
+        assertThat(
+                loan.get().getUser().getId(),
+                is(2L)
+        );
+        // Devolver
+        click(By.cssSelector(".three > .card:nth-child(2)"));
+        type(By.name("copyId"), "5");
+        click(By.cssSelector(".primary"));
+        click(By.cssSelector(".btn:nth-child(5)"));
 
-    WebElement pwd = wait.until(ExpectedConditions.visibilityOfElementLocated(
-            By.cssSelector("input[name='password'], input[type='password']")
-    ));
-    pwd.clear();
-    pwd.sendKeys(password);
+        assertThat(waitAlert().getText(), is("¿Confirmar devolución del ejemplar?"));
+        waitAlert().accept();
+        await()
+                .atMost(10, TimeUnit.SECONDS)
+                .pollInterval(200, TimeUnit.MILLISECONDS)
+                .untilAsserted(() -> {
+                    assertThat(
+                            penaltyRepository.findByUserIdAndActiveIsTrue(2L),
+                            is(Collections.emptyList())
+                    );
+                    Optional<Loan> loan1= loanRepository.findByCopyIdAndClosed(5L, false);
+                    assertThat(loan1.isEmpty(), is(true));
 
-    // Submit "real" (Cognito suele ir mejor así)
-    pwd.submit();
+                });
+    }
 
-    // Espera a salir de Cognito y entrar en tu app
-    wait.until(ExpectedConditions.not(ExpectedConditions.urlContains("amazoncognito.com")));
-    wait.until(ExpectedConditions.urlContains("localhost:8080"));
-    wait.until(ExpectedConditions.not(ExpectedConditions.urlContains("/login/oauth2/code/")));
-  }
-
-  // ==== Helpers ====
-  private void click(By locator) {
-    wait.until(ExpectedConditions.elementToBeClickable(locator)).click();
-  }
-
-  private void type(By locator, String text) {
-    WebElement el = wait.until(ExpectedConditions.visibilityOfElementLocated(locator));
-    el.clear();
-    el.sendKeys(text);
-  }
 }

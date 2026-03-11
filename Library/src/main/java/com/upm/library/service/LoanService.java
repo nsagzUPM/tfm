@@ -132,7 +132,7 @@ public class LoanService {
                 );
             }
             else{
-                Reservation reservation = reservationRepository.findByUserIdAndCopyIdAndStatus(userId, copy.getId(), ReservationStatus.ACTIVE).getFirst();
+                Reservation reservation = reservationRepository.findByUserIdAndCopyIdAndStatus(userId, copy.getId(), ReservationStatus.ACTIVE).get();
                 reservation.fulfill();
                 reservationRepository.save(reservation);
             }
