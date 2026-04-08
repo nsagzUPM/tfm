@@ -1,0 +1,166 @@
+<!-- src/main/resources/templates/admin-loan.html -->
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <title>Registrar préstamo</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<header th:replace="~{fragments/layout :: topbar(${userName}, ${role})}"></header>
+
+<main class="container">
+    <section class="card pad">
+        <div class="row spread">
+            <div>
+                <h1 class="h1">Bibliotecario → Registrar préstamo</h1>
+                <p class="p">1) Buscar usuario · 2) Seleccionar · 3) Escanear ejemplar</p>
+            </div>
+            <a class="btn" th:href="@{/menu}">← Volver</a>
+        </div>
+        <div th:if="${toastOk != null}" class="card pad"
+             style="border-color: rgba(2,122,72,.35); background: rgba(2,122,72,.08);">
+            <p class="p" th:text="${toastOk}">OK</p>
+        </div>
+
+        <div th:if="${toastErr != null}" class="card pad"
+             style="border-color: rgba(180,35,24,.35); background: rgba(180,35,24,.08);">
+            <p class="p" th:text="${toastErr}">Error</p>
+        </div>
+
+        <div class="divider" th:if="${toastOk != null || toastErr != null}"></div>
+
+
+        <div class="divider"></div>
+
+        <div class="grid two">
+
+            <!-- ===== Columna izquierda: buscar + lista + seleccionar ===== -->
+            <div class="card pad">
+                <h2 class="h2">1) Buscar usuario</h2>
+
+                <form class="row" method="get" th:action="@{/admin/loan}">
+                    <input class="input"
+                           name="userQ"
+                           placeholder="Username / Email"
+                           th:value="${userQ}"
+                           style="flex:1;min-width:220px;">
+                    <button class="btn primary" type="submit">Buscar</button>
+                </form>
+
+                <div class="divider"></div>
+
+                <h2 class="h2">Usuarios encontrados</h2>
+
+                <!-- Sin búsqueda todavía -->
+                <div class="card pad" th:if="${userQ == null || #strings.isEmpty(userQ)}">
+                    <p class="p">Introduce un texto para buscar usuarios.</p>
+                </div>
+
+                <!-- Búsqueda sin resultados -->
+                <div class="card pad"
+                     th:if="${userQ != null && !#strings.isEmpty(userQ) && (users == null || #lists.isEmpty(users))}">
+                    <p class="p">No se encontraron usuarios.</p>
+                </div>
+
+                <!-- Lista de usuarios -->
+                <div class="list" th:if="${users != null && !#lists.isEmpty(users)}">
+                    <article class="item" th:each="u : ${users}">
+                        <div class="thumb" aria-hidden="true"></div>
+
+                        <div class="meta">
+                            <p class="title" th:text="${u.name}">Nombre Apellido</p>
+                            <p class="sub">
+                                <span th:text="'Email: ' +${u.email}">Email: mail@upm.es</span>
+                                ·
+                                <span th:if="${u.role != null}" th:text="'Rol: ' + ${u.role}">Rol: Estudiante</span>
+                            </p>
+                        </div>
+
+                        <div class="right">
+                            <!-- Seleccionar usuario -->
+                            <form th:action="@{/admin/loan}" method="get" style="margin:0;">
+                                <input type="hidden" name="userId" th:value="${u.id}"/>
+                                <!-- conserva el texto buscado para volver a la lista si quieres -->
+                                <input type="hidden" name="userQ" th:value="${userQ}"/>
+
+                                <button class="btn"
+                                        type="submit"
+                                        th:classappend="${selectedUser != null && selectedUser.id == u.id} ? ' primary' : ''">
+                                    <span th:text="${selectedUser != null && selectedUser.id == u.id} ? 'Seleccionado' : 'Seleccionar'">
+                                        Seleccionar
+                                    </span>
+                                </button>
+                            </form>
+                        </div>
+                    </article>
+                </div>
+
+                <div class="divider"></div>
+
+                <h2 class="h2">Usuario seleccionado</h2>
+                <div th:if="${selectedUser != null}">
+                    <p class="p">
+                        <strong th:text="${selectedUser.name}">María López</strong>
+                        <span class="chip" th:if="${selectedUser.role != null}" th:text="${selectedUser.role}">Estudiante</span>
+                    </p>
+                    <p class="p" th:if="${selectedUser.email != null}" th:text="${selectedUser.email}">mail@upm.es</p>
+                    <p class="p" th:text="'Está penalizado: ' + (${userHasPenalty} ? 'Sí' : 'No')">mail@upm.es</p>
+                </div>
+                <p class="p" th:if="${selectedUser == null}">Ningún usuario seleccionado.</p>
+            </div>
+
+            <!-- ===== Columna derecha: escanear ejemplar (solo si hay usuario) ===== -->
+            <div class="card pad">
+                <h2 class="h2">3) Escanear ejemplar</h2>
+
+                <!-- Bloqueado si no hay usuario -->
+                <div class="card pad" th:if="${selectedUser == null}">
+                    <p class="p">Primero selecciona un usuario para continuar.</p>
+                </div>
+
+                <div th:if="${selectedUser != null}">
+                    <form method="get" th:action="@{/admin/loan}" class="field">
+                        <input type="hidden" name="userId" th:value="${selectedUser.id}"/>
+                        <input type="hidden" name="userQ" th:value="${userQ}"/>
+                        <label class="label">Código de barras / ID ejemplar</label>
+                        <input class="input" name="copyCode" placeholder="Escanear..." autofocus/>
+                        <button class="btn primary" type="submit">Buscar ejemplar</button>
+                    </form>
+
+                    <div class="divider"></div>
+
+                    <!-- Detalles del ejemplar -->
+                    <div th:if="${copy != null}">
+                        <p class="p" th:text="'Ejemplar: ' + ${copy.id}">Ejemplar: 12345</p>
+                        <p class="p" th:text="'Estado: ' + ${copy.status}">Estado: Disponible</p>
+                        <p class="p" th:text="'Reserva para este usuario: ' + (${reservedForUser} ? 'Sí' : 'No')">
+                            Reserva para este usuario: Sí/No
+                        </p>
+                        <p class="p" th:text="'Referencia: ' + (${copy.referenceOnly} ? 'Sí' : 'No')">Referencia: No</p>
+
+                        <div class="divider"></div>
+
+                        <!-- Confirmar préstamo -->
+                        <form method="post" th:action="@{/admin/loan/confirm}">
+                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                            <input type="hidden" name="userId" th:value="${selectedUser.id}"/>
+                            <input type="hidden" name="copyId" th:value="${copy.id}"/>
+                            <input type="hidden" name="userQ" th:value="${userQ}"/>
+
+                            <button class="btn primary" type="submit">Confirmar préstamo</button>
+                        </form>
+                    </div>
+
+                    <p class="p" th:if="${copy == null}">Introduce o escanea un ejemplar para ver detalles.</p>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+</main>
+</body>
+</html>

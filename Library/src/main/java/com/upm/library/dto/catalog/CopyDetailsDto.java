@@ -10,8 +10,10 @@ public record CopyDetailsDto(
         String status,
         boolean referenceOnly,
         String location
+
 ) {
     public static CopyDetailsDto from(Copy c) {
+
         return new CopyDetailsDto(
                 c.getId(),
                 c.getBook().getId(),

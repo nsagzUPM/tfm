@@ -1,0 +1,145 @@
+<!-- src/main/resources/templates/admin-return.html -->
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <title>Registrar devolución</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<header th:replace="~{fragments/layout :: topbar(${userName}, ${role})}"></header>
+
+<main class="container">
+    <section class="card pad">
+        <div class="row spread">
+            <div>
+                <h1 class="h1">Bibliotecario → Registrar devolución</h1>
+            </div>
+            <a class="btn" th:href="@{/menu}">← Volver</a>
+        </div>
+
+        <!-- Mensajes -->
+        <div class="divider"></div>
+
+        <div th:if="${toastOk != null}" class="card pad"
+             style="border-color: rgba(2,122,72,.35); background: rgba(2,122,72,.08);">
+            <p class="p" th:text="${toastOk}">Devolución registrada ✅</p>
+        </div>
+
+        <div th:if="${toastErr != null}" class="card pad"
+             style="border-color: rgba(180,35,24,.35); background: rgba(180,35,24,.08);">
+            <p class="p" th:text="${toastErr}">Error</p>
+        </div>
+
+        <div class="divider" th:if="${toastOk != null || toastErr != null}"></div>
+
+        <div class="grid two">
+            <!-- Columna izquierda: escaneo -->
+            <div class="card pad">
+                <h2 class="h2">Escanear ejemplar</h2>
+
+                <form method="get" th:action="@{/admin/return}" class="field">
+                    <label class="label">Código de barras / ID ejemplar</label>
+                    <input class="input" name="copyId" placeholder="Escanear..." th:value="${copyId}" autofocus />
+                    <button class="btn primary" type="submit">Buscar préstamo</button>
+                </form>
+
+                <div class="divider"></div>
+
+                <p class="p">
+                    Introduce el identificador del ejemplar para localizar el préstamo activo asociado.
+                </p>
+            </div>
+
+            <!-- Columna derecha: detalle préstamo + confirmar -->
+            <div class="card pad">
+                <h2 class="h2">Préstamo activo</h2>
+
+                <!-- Si NO hay préstamo cargado -->
+                <div th:if="${loan == null}" class="card pad">
+                    <p class="p">Escanea un ejemplar para ver el préstamo activo.</p>
+                </div>
+
+                <!-- Si hay préstamo -->
+                <div th:if="${loan != null}">
+                    <!-- Datos principales -->
+                    <table class="table">
+                        <tbody>
+                        <tr>
+                            <th>Ejemplar</th>
+                            <td th:text="${loan.copyId}">12345</td>
+                        </tr>
+                        <tr>
+                            <th>Libro</th>
+                            <td>
+                                <div>
+                                    <strong th:text="${loan.bookTitle}">Título del libro</strong>
+                                </div>
+                                <div class="p" style="margin-top:4px;">
+                                    <span th:text="${loan.bookAuthor}">Autor</span>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Usuario</th>
+                            <td>
+                                <div>
+                                    <strong th:text="${loan.userName}">Usuario</strong>
+                                </div>
+                                <div class="p" style="margin-top:4px;">
+                                    <span th:text="${loan.userEmail}">email@upm.es</span>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Inicio</th>
+                            <td th:text="${loan.createdAt}">2026-02-01</td>
+                        </tr>
+                        <tr>
+                            <th>Vence</th>
+                            <td th:text="${loan.dueAt}">2026-02-15</td>
+                        </tr>
+                        <tr>
+                            <th>Retraso</th>
+                            <td>
+                                <span class="chip ok" th:if="${loan.overdueDays != null && loan.overdueDays == 0}">Sin retraso</span>
+                                <span class="chip bad" th:if="${loan.overdueDays != null && loan.overdueDays > 0}"
+                                      th:text="${loan.overdueDays} + ' días'">3 días</span>
+                                <span class="chip" th:if="${loan.overdueDays == null}">—</span>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="divider"></div>
+
+                    <h2 class="h2">3) Confirmar devolución</h2>
+
+                    <form method="post" th:action="@{/admin/return/confirm}" class="row" style="gap:12px;">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+                        <!-- Reenvío de datos mínimos -->
+                        <input type="hidden" name="loanId" th:value="${loan.id}"/>
+                        <input type="hidden" name="copyCode" th:value="${copyCode}"/>
+
+                        <button class="btn primary" type="submit"
+                                onclick="return confirm('¿Confirmar devolución del ejemplar?');">
+                            Confirmar devolución
+                        </button>
+
+                        <a class="btn" th:href="@{/admin/return}">Limpiar</a>
+                    </form>
+
+                    <p class="p" style="margin-top:10px;">
+                        Al confirmar, el ejemplar pasará a <strong>disponible</strong> y el préstamo quedará marcado como <strong>devuelto</strong>.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+</main>
+</body>
+</html>

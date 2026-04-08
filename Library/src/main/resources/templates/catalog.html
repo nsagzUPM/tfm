@@ -1,0 +1,56 @@
+<!-- src/main/resources/templates/catalog.html -->
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <title>Catálogo - Biblioteca</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<header th:replace="~{fragments/layout :: topbar(${userName}, ${role})}"></header>
+
+<main class="container">
+    <section class="card pad">
+        <div class="row spread">
+            <div>
+                <h1 class="h1">Catálogo</h1>
+                <p class="p">Busca por título, autor o materia</p>
+            </div>
+            <a class="btn" th:href="@{/menu}">← Volver</a>
+        </div>
+
+        <div class="divider"></div>
+
+        <form class="row" th:action="@{/catalog}" method="get" style="gap:12px;"
+              data-catalog-search>
+            <input class="input" name="q" placeholder="Buscar..." th:value="${q}"
+                   style="flex:1;min-width:220px;" data-q>
+            <button class="btn primary" type="submit">Buscar</button>
+        </form>
+
+        <div class="divider"></div>
+
+        <div class="list" data-results>
+            <!-- plantilla server-render -->
+            <article class="item" th:each="book : ${books}">
+                <div class="thumb" aria-hidden="true"></div>
+                <div class="meta">
+                    <p class="title" th:text="${book.title}">Título</p>
+                    <p class="sub" th:text="${book.author}">Autor</p>
+                    <p class="sub" th:text="${book.subject}">Autor</p>
+                </div>
+                <div class="right">
+                    <a class="btn" th:href="@{|/catalog/copies/${book.id}|}">Ver ejemplares →</a>
+                </div>
+            </article>
+            <div class="card pad" th:if="${#lists.isEmpty(books)}">
+                <p class="p">No se han encontrado coincidencias.</p>
+            </div>
+        </div>
+    </section>
+
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+</main>
+</body>
+</html>

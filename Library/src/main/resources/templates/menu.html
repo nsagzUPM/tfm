@@ -1,0 +1,64 @@
+<!-- src/main/resources/templates/menu.html -->
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <title>Menú - Biblioteca</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<header th:replace="~{fragments/layout :: topbar(${userName}, ${role})}"></header>
+
+<main class="container">
+    <section class="card pad">
+        <h1 class="h1">Menú principal</h1>
+        <p class="p">Selecciona una opción</p>
+        <div class="divider"></div>
+
+        <div class="grid two">
+            <a class="card pad" th:href="@{/catalog}">
+                <h2 class="h2">Buscar en catálogo</h2>
+                <p class="p">Localiza obras y consulta ejemplares</p>
+            </a>
+
+            <a class="card pad" th:href="@{/my-account}">
+                <h2 class="h2">Mis préstamos y reservas</h2>
+                <p class="p">Renovaciones, reservas activas y sanciones</p>
+            </a>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Mostrar solo si es bibliotecario -->
+        <div th:if="${isLibrarian}">
+            <h2 class="h2">Opciones bibliotecario</h2>
+            <div class="grid three">
+                <a class="card pad" th:href="@{/admin/loan}">
+                    <h2 class="h2">Registrar préstamo</h2>
+                    <p class="p">Buscar usuario y escanear ejemplar</p>
+                </a>
+                <a class="card pad" th:href="@{/admin/return}">
+                    <h2 class="h2">Registrar devolución</h2>
+                    <p class="p">Escanear y calcular sanción</p>
+                </a>
+                <a class="card pad" th:href="@{/admin/copies}">
+                    <h2 class="h2">Gestionar ejemplares</h2>
+                    <p class="p">Altas, edición y bajas</p>
+                </a>
+                <a class="card pad" th:href="@{/admin/professor-delivery}">
+                    <h2 class="h2">Envío a despacho</h2>
+                    <p class="p">Reservas de profesores listas</p>
+                </a>
+                <a class="card pad" th:href="@{/admin/config}">
+                    <h2 class="h2">Configuración</h2>
+                    <p class="p">Parámetros del sistema</p>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+</main>
+</body>
+</html>

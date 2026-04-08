@@ -1,0 +1,44 @@
+<!-- src/main/resources/templates/reservations.html -->
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <title>Reservar - Biblioteca</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<header th:replace="~{fragments/layout :: topbar(${userName}, ${role})}"></header>
+
+<main class="container">
+    <section class="card pad" style="max-width:760px;">
+        <div class="row spread">
+            <div>
+                <h1 class="h1">Reservar ejemplar</h1>
+                <p class="p" th:text="'Libro: ' + ${bookTitle}">Libro: Título ejemplo</p>
+                <p class="p" th:text="'Ejemplar: ' + ${copyId}">Ejemplar: 12345</p>
+                <p class="p" th:text="'Estado: ' + ${rstatus}">Estado: Disponible</p>
+            </div>
+            <a class="btn" th:href="@{|/catalog/copies/${bookId}|}">← Volver</a>
+        </div>
+
+        <div class="divider"></div>
+
+        <form th:action="@{/reservations/confirm}" method="post" class="row spread" style="align-items:flex-end;">
+            <input type="hidden" name="copyId" th:value="${copyId}"/>
+
+            <!-- CSRF -->
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+            <button class="btn primary" type="submit">Confirmar reserva</button>
+            <a class="btn" th:href="@{|/catalog/copies/${bookId}|}">Cancelar</a>
+        </form>
+
+        <div class="divider"></div>
+        <p class="p">Nota: Los profesores tienen envío a despacho.</p>
+    </section>
+
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+</main>
+</body>
+</html>

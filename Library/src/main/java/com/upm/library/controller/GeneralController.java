@@ -1,20 +1,23 @@
 package com.upm.library.controller;
 
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-@RestController
+@Controller
 @RequestMapping("/")
 class GeneralController {
 
     @GetMapping
-    public String get() {
-        return "home page";
+    public String home() {
+        return "redirect:/menu";
     }
 
-    @GetMapping("/logout")
-    public String logout() {
-        return "Logged out";
+    @GetMapping("/menu")
+    public String menu(Model model) {
+        model.addAttribute("title", "Menú principal");
+        return "menu";
     }
+
 }

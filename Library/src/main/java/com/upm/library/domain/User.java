@@ -17,14 +17,31 @@ public class User {
     @Column(nullable = false)
     private Role role = Role.USER;
 
-    protected User() {}
+    @Column(nullable = true, unique = true)
+    private String name;
 
-    public User(String externalId, Role role) {
-        this.externalId = externalId;
-        this.role = role;
+    protected User() {
     }
 
-    public Long getId() { return id; }
-    public String getExternalId() { return externalId; }
-    public Role getRol() { return role; }
+    public User(String externalId, Role role, String name) {
+        this.externalId = externalId;
+        this.role = role;
+        this.name = name;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getExternalId() {
+        return externalId;
+    }
+
+    public Role getRol() {
+        return role;
+    }
 }

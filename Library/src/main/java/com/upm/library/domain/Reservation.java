@@ -1,7 +1,9 @@
 package com.upm.library.domain;
 
 import jakarta.persistence.*;
+
 import java.time.Instant;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "reservations")
@@ -24,19 +26,54 @@ public class Reservation {
     @Column(nullable = false)
     private Instant createdAt = Instant.now();
 
-    protected Reservation() {}
+    @Column(nullable = false)
+    private LocalDate deadline = LocalDate.parse("2025-10-30");
+
+    protected Reservation() {
+    }
 
     public Reservation(User user, Copy copy) {
         this.user = user;
         this.copy = copy;
     }
 
-    public Long getId() { return id; }
-    public User getUser() { return user; }
-    public Copy getCopy() { return copy; }
-    public ReservationStatus getStatus() { return status; }
-    public Instant getCreatedAt() { return createdAt; }
+    public Long getId() {
+        return id;
+    }
 
-    public void cancel() { this.status = ReservationStatus.CANCELED; }
-    public void fulfill() { this.status = ReservationStatus.FULFILLED; }
+    public User getUser() {
+        return user;
+    }
+
+    public Copy getCopy() {
+        return copy;
+    }
+
+    public ReservationStatus getStatus() {
+        return status;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public LocalDate getDeadline() {
+        return deadline;
+    }
+
+    public void cancel() {
+        this.status = ReservationStatus.CANCELED;
+    }
+
+    public void fulfill() {
+        this.status = ReservationStatus.FULFILLED;
+    }
+
+    public void setStatus(ReservationStatus status) {
+        this.status = status;
+    }
+
+    public void setDeadline(LocalDate deadline) {
+        this.deadline = deadline;
+    }
 }

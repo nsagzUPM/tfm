@@ -5,7 +5,9 @@ import com.upm.library.domain.Loan;
 import com.upm.library.domain.Penalty;
 import com.upm.library.domain.Reservation;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 public record MyAccountDto(
         List<LoanDto> loans,
@@ -14,9 +16,14 @@ public record MyAccountDto(
 ) {
     @SuppressWarnings("unchecked")
     public static MyAccountDto from(Object[] data) {
-        List<Loan> loans = (List<Loan>) data[0];
-        List<Reservation> reservations = (List<Reservation>) data[1];
-        List<Penalty> penalties = (List<Penalty>) data[2];
+        List<Loan> loans = Optional.ofNullable((List<Loan>) data[0])
+                .orElse(Collections.emptyList());
+
+        List<Reservation> reservations = Optional.ofNullable((List<Reservation>) data[1])
+                .orElse(Collections.emptyList());
+
+        List<Penalty> penalties = Optional.ofNullable((List<Penalty>) data[2])
+                .orElse(Collections.emptyList());
 
         return new MyAccountDto(
                 loans.stream().map(LoanDto::from).toList(),

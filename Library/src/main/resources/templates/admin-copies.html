@@ -1,0 +1,66 @@
+<!-- src/main/resources/templates/librarian-catalog-copies.html -->
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <title>Gestión de ejemplares</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<header th:replace="~{fragments/layout :: topbar(${userName}, ${role})}"></header>
+
+<main class="container">
+    <section class="card pad">
+        <div class="row spread">
+            <div>
+                <h1 class="h1">Bibliotecario → Gestión de Ejemplares</h1>
+                <p class="p">Altas, edición y bajas</p>
+            </div>
+            <a class="btn" th:href="@{/menu}">← Volver</a>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="row">
+            <button class="btn primary" type="button">Alta de ejemplar</button>
+            <button class="btn" type="button">Editar ejemplar</button>
+            <button class="btn danger" type="button">Eliminar ejemplar</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="card pad">
+            <h2 class="h2">Alta de ejemplar</h2>
+            <form class="grid two" th:action="@{/librarian/copies/create}" method="post">
+                <div class="field">
+                    <label class="label">Obra</label>
+                    <input class="input" name="work" placeholder="ID obra / título...">
+                </div>
+                <div class="field">
+                    <label class="label">ID ejemplar</label>
+                    <input class="input" name="copyId" placeholder="12345">
+                </div>
+                <div class="field">
+                    <label class="label">Ubicación</label>
+                    <input class="input" name="location" placeholder="Estante A3">
+                </div>
+                <div class="field">
+                    <label class="label">¿Es referencia?</label>
+                    <select class="select" name="reference">
+                        <option value="false">No</option>
+                        <option value="true">Sí</option>
+                    </select>
+                </div>
+                <div class="row" style="grid-column:1/-1;justify-content:flex-end;">
+                    <button class="btn primary" type="submit">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+
+</main>
+</body>
+</html>

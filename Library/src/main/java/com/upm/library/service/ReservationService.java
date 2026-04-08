@@ -4,7 +4,11 @@ import com.upm.library.domain.*;
 import com.upm.library.exception.BusinessRuleException;
 import com.upm.library.exception.NotFoundException;
 import com.upm.library.repository.*;
+
 import java.time.LocalDate;
+import java.util.List;
+
+import lombok.val;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,17 +19,19 @@ public class ReservationService {
     private final CopyRepository copyRepository;
     private final ReservationRepository reservationRepository;
     private final PenaltyRepository penaltyRepository;
+    private final SystemConfigService systemConfigService;
 
     public ReservationService(
             UserRepository userRepository,
             CopyRepository copyRepository,
             ReservationRepository reservationRepository,
-            PenaltyRepository penaltyRepository
+            PenaltyRepository penaltyRepository, SystemConfigService systemConfigService
     ) {
         this.userRepository = userRepository;
         this.copyRepository = copyRepository;
         this.reservationRepository = reservationRepository;
         this.penaltyRepository = penaltyRepository;
+        this.systemConfigService = systemConfigService;
     }
 
     @Transactional
@@ -46,16 +52,51 @@ public class ReservationService {
         if (copy.isReferenceOnly()) {
             throw new BusinessRuleException("Reference-only copies cannot be reserved.");
         }
-        if (copy.getStatus() != CopyStatus.AVAILABLE) {
-            throw new BusinessRuleException("Copy is not available.");
+        boolean copyAvailable =
+                copy.getStatus() == CopyStatus.AVAILABLE;
+
+        boolean hasActiveOrQueued =
+                reservationRepository.existsByCopyAndStatusIn(
+                        copy,
+                        List.of(ReservationStatus.ACTIVE, ReservationStatus.QUEUED)
+                );
+        Reservation reservation = new Reservation(user, copy);
+        reservation.setDeadline(LocalDate.now().plusDays(systemConfigService.getReservationDays()));
+        if (copyAvailable && !hasActiveOrQueued) {
+            reservation.setStatus(ReservationStatus.ACTIVE);
+            copy.markAsReserved();
+        } else {
+            reservation.setStatus(ReservationStatus.QUEUED);
         }
 
-        Reservation reservation = new Reservation(user, copy);
-        copy.markAsReserved();
-
-        copyRepository.save(copy);
-        return reservationRepository.save(reservation);
+        copyRepository.saveAndFlush(copy);
+        return reservationRepository.saveAndFlush(reservation);
     }
+
+    @Transactional
+    public void promoteNextReservation(Copy copy) {
+        reservationRepository
+                .findFirstByCopyAndStatusOrderByCreatedAtAsc(
+                        copy,
+                        ReservationStatus.QUEUED
+                )
+                .ifPresent(reservation -> {
+                    reservation.setStatus(ReservationStatus.ACTIVE);
+                    reservation.setDeadline(LocalDate.now().plusDays(systemConfigService.getReservationDays()));
+                    copy.markAsReserved();
+
+                    reservationRepository.save(reservation);
+                    copyRepository.save(copy);
+                });
+    }
+
+    public boolean hasQueuedReservations(Copy copy) {
+        return reservationRepository.existsByCopyAndStatus(
+                copy,
+                ReservationStatus.QUEUED
+        );
+    }
+
 
     @Transactional
     public void cancelReservation(String externalUserId, Long reservationId) {
@@ -68,14 +109,22 @@ public class ReservationService {
         if (!reservation.getUser().getId().equals(user.getId())) {
             throw new BusinessRuleException("You cannot cancel another user's reservation.");
         }
-        if (reservation.getStatus() != ReservationStatus.ACTIVE) {
+        if (reservation.getStatus() != ReservationStatus.ACTIVE && reservation.getStatus() != ReservationStatus.QUEUED) {
             throw new BusinessRuleException("Only active reservations can be canceled.");
         }
-
+        ReservationStatus status = reservation.getStatus();
         reservation.cancel();
-        reservation.getCopy().markAsAvailable();
-
         reservationRepository.save(reservation);
+        Copy copy = reservation.getCopy();
+
+        if (status != ReservationStatus.ACTIVE) {
+            return;
+        }
+        if (hasQueuedReservations(copy)) {
+            promoteNextReservation(copy);
+        } else {
+            copy.markAsAvailable();
+        }
         copyRepository.save(reservation.getCopy());
     }
 }

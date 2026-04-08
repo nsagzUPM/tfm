@@ -7,7 +7,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 public interface PenaltyRepository extends JpaRepository<Penalty, Long> {
-    List<Penalty> findByUserId(Long userId);
-
+    List<Penalty> findByUserIdAndActiveIsTrue(Long userId);
+    List<Penalty> findByActiveTrueAndEndDateBefore(LocalDate date);
     boolean existsByUserIdAndActiveIsTrueAndEndDateGreaterThanEqual(Long userId, LocalDate today);
 }
