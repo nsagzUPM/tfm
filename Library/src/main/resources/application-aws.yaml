@@ -7,8 +7,8 @@ spring:
       client:
         registration:
           cognito:
-            client-id: 1h2dcs34d8ucv154k44joac1bc
-            client-secret: f49b7tho9hm75gnvv51pd70f998tks9bihvpa5nt9i6761sabfb
+            client-id: 7ncoq4ft23f4nhg9tiikkdqm9t
+            client-secret: 1cn31938ai0eaichoks5esdmmder6hv5gsebjdv4i90986gob3j5
             scope:
               - phone
               - openid
@@ -16,11 +16,11 @@ spring:
             redirect-uri: http://localhost:8080/login/oauth2/code/cognito
         provider:
           cognito:
-            issuerUri: https://cognito-idp.us-east-1.amazonaws.com/us-east-1_SNnleUPIH
+            issuerUri: https://cognito-idp.us-east-1.amazonaws.com/us-east-1_R96CXx8lC
             user-name-attribute: username
 library:
   cognito:
-    domain: https://us-east-1snnleupih.auth.us-east-1.amazoncognito.com
+    domain: https://us-east-R96CXx8lC.auth.us-east-1.amazoncognito.com
     logout-redirect: http://localhost:8080/
 security:
   jwt:
